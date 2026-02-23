@@ -14,14 +14,16 @@ import {
   LAYER_TO_SOURCE,
 } from '@/config';
 import { BETA_MODE } from '@/config/beta';
-import { fetchCategoryFeeds, getFeedFailures, fetchMultipleStocks, fetchCrypto, fetchPredictions, fetchEarthquakes, fetchWeatherAlerts, fetchFredData, fetchInternetOutages, isOutagesConfigured, fetchAisSignals, initAisStream, getAisStatus, disconnectAisStream, isAisConfigured, fetchCableActivity, fetchCableHealth, fetchProtestEvents, getProtestStatus, fetchFlightDelays, fetchMilitaryFlights, fetchMilitaryVessels, initMilitaryVesselStream, isMilitaryVesselTrackingConfigured, fetchUSNIFleetReport, initDB, updateBaseline, calculateDeviation, addToSignalHistory, saveSnapshot, cleanOldSnapshots, analysisWorker, fetchPizzIntStatus, fetchGdeltTensions, fetchNaturalEvents, fetchRecentAwards, fetchOilAnalytics, fetchCyberThreats, drainTrendingSignals } from '@/services';
+import { fetchCategoryFeeds, getFeedFailures, fetchMultipleStocks, fetchCrypto, fetchPredictions, fetchEarthquakes, fetchWeatherAlerts, fetchFredData, fetchInternetOutages, isOutagesConfigured, fetchAisSignals, initAisStream, getAisStatus, disconnectAisStream, isAisConfigured, fetchCableActivity, fetchCableHealth, fetchProtestEvents, getProtestStatus, fetchFlightDelays, fetchMilitaryFlights, fetchMilitaryVessels, initMilitaryVesselStream, isMilitaryVesselTrackingConfigured, fetchUSNIFleetReport, initDB, updateBaseline, calculateDeviation, addToSignalHistory, saveSnapshot, cleanOldSnapshots, analysisWorker, fetchPizzIntStatus, fetchGdeltTensions, fetchNaturalEvents, fetchRecentAwards, fetchOilAnalytics, fetchCyberThreats, drainTrendingSignals, ingestHeadlines } from '@/services';
 import { fetchCountryMarkets } from '@/services/prediction';
 import { mlWorker } from '@/services/ml-worker';
 import { clusterNewsHybrid } from '@/services/clustering';
 import { ingestProtests, ingestFlights, ingestVessels, ingestEarthquakes, detectGeoConvergence, geoConvergenceToSignal } from '@/services/geo-convergence';
 import { signalAggregator } from '@/services/signal-aggregator';
+import { focalPointDetector } from '@/services/focal-point-detector';
 import { updateAndCheck } from '@/services/temporal-baseline';
 import { fetchAllFires, flattenFires, computeRegionStats, toMapFires } from '@/services/wildfires';
+import { fetchTelegramOsint, classifyByKeyword as classifyTelegramByKeyword } from '@/services/telegram-osint';
 import { SatelliteFiresPanel } from '@/components/SatelliteFiresPanel';
 import { analyzeFlightsForSurge, surgeAlertToSignal, detectForeignMilitaryPresence, foreignPresenceToSignal, type TheaterPostureSummary } from '@/services/military-surge';
 import { fetchCachedTheaterPosture } from '@/services/cached-theater-posture';
@@ -80,6 +82,8 @@ import {
   ClimateAnomalyPanel,
   PopulationExposurePanel,
   InvestmentsPanel,
+  OsintFeedPanel,
+  type OsintMessage,
   LanguageSelector,
 } from '@/components';
 import type { SearchResult } from '@/components/SearchModal';
@@ -2338,6 +2342,9 @@ export class App {
 
       const populationExposurePanel = new PopulationExposurePanel();
       this.panels['population-exposure'] = populationExposurePanel;
+
+      const osintPanel = new OsintFeedPanel();
+      this.panels['osint-feed'] = osintPanel;
     }
 
     // GCC Investments Panel (finance variant)
@@ -3485,6 +3492,34 @@ export class App {
       }
     }
 
+    if (SITE_VARIANT === 'full') {
+      const telegramMessages = await fetchTelegramOsint(import.meta.env.VITE_TELEGRAM_OSINT_URL || '');
+      const telegramNews = classifyTelegramByKeyword(telegramMessages);
+      const osintPanel = this.panels['osint-feed'] as OsintFeedPanel | undefined;
+      const osintMessages: OsintMessage[] = telegramMessages.map((message, index) => {
+        const parsedDate = new Date(message.date);
+        return {
+          id: `${message.chatName || 'telegram'}:${message.date}:${index}`,
+          channel: message.chatName || 'Telegram',
+          text: message.text,
+          date: Number.isNaN(parsedDate.getTime()) ? new Date() : parsedDate,
+          threatLevel: telegramNews[index]?.threat?.level,
+        };
+      });
+      osintPanel?.updateMessages(osintMessages);
+      if (telegramNews.length > 0) {
+        ingestHeadlines(telegramNews.map(item => ({
+          title: item.title,
+          pubDate: item.pubDate,
+          source: item.source,
+          link: item.link,
+        })));
+        collectedNews.push(...telegramNews);
+      }
+      this.statusPanel?.updateFeed('Telegram OSINT', { status: 'ok', itemCount: telegramNews.length });
+      console.log(`[Telegram OSINT] App ingest: ${telegramNews.length} items`);
+    }
+
     this.allNews = collectedNews;
     this.initialLoadComplete = true;
     maybeShowDownloadBanner();
@@ -3512,6 +3547,13 @@ export class App {
       if (mlWorker.isAvailable && this.latestClusters.length > 0) {
         const insightsPanel = this.panels['insights'] as InsightsPanel | undefined;
         insightsPanel?.updateInsights(this.latestClusters);
+      }
+
+      if (SITE_VARIANT === 'full' && this.latestClusters.length > 0) {
+        ingestNewsForCII(this.latestClusters);
+        dataFreshness.recordUpdate('gdelt', this.latestClusters.length);
+        focalPointDetector.analyze(this.latestClusters, signalAggregator.getSummary());
+        (this.panels['cii'] as CIIPanel)?.refresh();
       }
 
       // Push geo-located news clusters to map
@@ -4462,13 +4504,6 @@ export class App {
         this.latestClusters = mlWorker.isAvailable
           ? await clusterNewsHybrid(this.allNews)
           : await analysisWorker.clusterNews(this.allNews);
-      }
-
-      // Ingest news clusters for CII
-      if (this.latestClusters.length > 0) {
-        ingestNewsForCII(this.latestClusters);
-        dataFreshness.recordUpdate('gdelt', this.latestClusters.length);
-        (this.panels['cii'] as CIIPanel)?.refresh();
       }
 
       // Run correlation analysis off main thread via Web Worker
