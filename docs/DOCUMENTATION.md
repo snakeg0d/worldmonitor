@@ -2,7 +2,7 @@
 
 AI-powered real-time global intelligence dashboard aggregating news, markets, geopolitical data, and infrastructure monitoring into a unified situation awareness interface.
 
-🌐 **[Live Demo: worldmonitor.app](https://worldmonitor.app)** | 💻 **[Tech Variant: tech.worldmonitor.app](https://tech.worldmonitor.app)**
+🌐 **[Live Demo: worldmonitor.snakeg0d.com](https://worldmonitor.snakeg0d.com)** | 💻 **[Tech Variant: tech.worldmonitor.snakeg0d.com](https://tech.worldmonitor.snakeg0d.com)**
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat&logo=vite&logoColor=white)
@@ -17,8 +17,8 @@ World Monitor runs two specialized variants from a single codebase, each optimiz
 
 | Variant | URL | Focus |
 |---------|-----|-------|
-| **🌍 World Monitor** | [worldmonitor.app](https://worldmonitor.app) | Geopolitical intelligence, military tracking, conflict monitoring, infrastructure security |
-| **💻 Tech Monitor** | [tech.worldmonitor.app](https://tech.worldmonitor.app) | Technology sector intelligence, AI/startup ecosystems, cloud infrastructure, tech events |
+| **🌍 World Monitor** | [worldmonitor.snakeg0d.com](https://worldmonitor.snakeg0d.com) | Geopolitical intelligence, military tracking, conflict monitoring, infrastructure security |
+| **💻 Tech Monitor** | [tech.worldmonitor.snakeg0d.com](https://tech.worldmonitor.snakeg0d.com) | Technology sector intelligence, AI/startup ecosystems, cloud infrastructure, tech events |
 
 A compact **variant switcher** in the header allows seamless navigation between variants while preserving your map position and panel configuration.
 
@@ -56,7 +56,7 @@ The primary variant focuses on geopolitical intelligence, military tracking, and
 
 ## Tech Monitor
 
-The tech variant ([tech.worldmonitor.app](https://tech.worldmonitor.app)) provides specialized layers for technology sector monitoring.
+The tech variant ([tech.worldmonitor.snakeg0d.com](https://tech.worldmonitor.snakeg0d.com)) provides specialized layers for technology sector monitoring.
 
 ### Tech Ecosystem Layers
 
@@ -3302,7 +3302,7 @@ const header = `World Monitor v${__APP_VERSION__}`;
 
 ```bash
 # Clone the repository
-git clone https://github.com/koala73/worldmonitor.git
+git clone https://github.com/snakeg0d/worldmonitor.git
 cd worldmonitor
 
 # Install everything (buf, sebuf plugins, npm deps, proto deps)
@@ -4037,7 +4037,7 @@ MIT
 
 ## Author
 
-**Elie Habib**
+**snakeg0d**
 
 ---
 

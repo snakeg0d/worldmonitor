@@ -437,7 +437,7 @@ export async function renderStoryToCanvas(data: StoryData): Promise<HTMLCanvasEl
   ctx.fillStyle = '#444';
   ctx.font = '600 24px Inter, system-ui, sans-serif';
   ctx.letterSpacing = '2px';
-  ctx.fillText('WORLDMONITOR.APP', footerTextX, H - 55);
+  ctx.fillText('WORLDMONITOR.SNAKEG0D.COM', footerTextX, H - 55);
   ctx.letterSpacing = '0px';
   ctx.font = '400 20px Inter, system-ui, sans-serif';
   ctx.fillText('Real-time global intelligence monitoring', footerTextX, H - 30);

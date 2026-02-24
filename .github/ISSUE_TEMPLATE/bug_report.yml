@@ -13,9 +13,9 @@ body:
       label: Variant
       description: Which variant are you using?
       options:
-        - worldmonitor.app (Full / Geopolitical)
-        - tech.worldmonitor.app (Tech / Startup)
-        - finance.worldmonitor.app (Finance)
+        - worldmonitor.snakeg0d.com (Full / Geopolitical)
+        - tech.worldmonitor.snakeg0d.com (Tech / Startup)
+        - finance.worldmonitor.snakeg0d.com (Finance)
         - Desktop app (Windows)
         - Desktop app (macOS)
         - Desktop app (Linux)
